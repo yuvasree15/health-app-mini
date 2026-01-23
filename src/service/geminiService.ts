@@ -2,12 +2,14 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 let ai: GoogleGenerativeAI | null = null;
 
+
 const getAI = () => {
   if (!ai) {
     ai = new GoogleGenerativeAI(process.env.API_KEY || '');
   }
   return ai;
 };
+
 
 export const getHealthAdvice = async (symptoms: string) => {
   try {
