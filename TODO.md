@@ -4,3 +4,4 @@
 - Fix API usage in getHealthAdvice function (Fixed - now returns parsed JSON object)
 - Fix API usage in getDoctorChatResponse function (Already correct - returns text response)
 - Test the fixes by running the app (Completed - app builds and runs successfully)
+- Fix import error for paymentService in AppointmentSystem.tsx (Fixed - created paymentService.ts with mock payment handling and updated PaymentModal)

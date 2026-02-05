@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { MOCK_DOCTORS, MOCK_MEDICINES, MOCK_LAB_TESTS, MOCK_CLINICS, MOCK_APPOINTMENTS, MOCK_USER, MOCK_ADMIN_USERS, MOCK_ACTIVITY_LOG } from '../constants';
 import { Doctor, Medicine, LabTest, CartItem, HealthRecord, Clinic, UserProfile, Appointment, UserRole, AdminUser, ConsultationHistoryItem } from '../types';
-import { BookingModal, PaymentModal } from './Modals';
+import { BookingModal, PaymentModal, RescheduleModal } from './Modals';
 import { getDoctorChatResponse } from '../service/geminiService';
 
 // --- Shared Components ---

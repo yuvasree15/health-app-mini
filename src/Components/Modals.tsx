@@ -35,22 +35,39 @@ export const PaymentModal: React.FC<{
   onClose: () => void;
   amount: number;
   onSuccess: () => void;
-}> = ({ isOpen, onClose, amount, onSuccess }) => {
+  onPayment?: (cardDetails: { cardNumber: string; expiry: string; cvv: string }) => Promise<void>;
+}> = ({ isOpen, onClose, amount, onSuccess, onPayment }) => {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'details' | 'processing' | 'success'>('details');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiry, setExpiry] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [error, setError] = useState('');
 
-  const handlePay = () => {
-    setLoading(true);
-    setStep('processing');
-    setTimeout(() => {
-      setLoading(false);
-      setStep('success');
+  const handlePay = async () => {
+    setError('');
+    try {
+      if (onPayment) {
+        await onPayment({ cardNumber, expiry, cvv });
+      }
+      setLoading(true);
+      setStep('processing');
       setTimeout(() => {
-        onSuccess();
-        onClose();
-        setStep('details'); // Reset for next time
-      }, 1500);
-    }, 2000);
+        setLoading(false);
+        setStep('success');
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+          setStep('details'); // Reset for next time
+          setCardNumber('');
+          setExpiry('');
+          setCvv('');
+        }, 1500);
+      }, 1000);
+    } catch (err: any) {
+      setError(err.message || 'Payment failed');
+      setStep('details');
+    }
   };
 
   return (
@@ -66,19 +83,43 @@ export const PaymentModal: React.FC<{
              <label className="text-xs font-semibold text-gray-500 uppercase">Card Number</label>
              <div className="relative">
                 <CreditCard className="absolute left-3 top-3 text-gray-400" size={18} />
-                <input type="text" placeholder="0000 0000 0000 0000" className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
+                <input
+                  type="text"
+                  placeholder="0000 0000 0000 0000"
+                  value={cardNumber}
+                  onChange={(e) => setCardNumber(e.target.value)}
+                  className="w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+                />
              </div>
            </div>
            <div className="grid grid-cols-2 gap-4">
              <div>
                <label className="text-xs font-semibold text-gray-500 uppercase">Expiry</label>
-               <input type="text" placeholder="MM/YY" className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
+               <input
+                 type="text"
+                 placeholder="MM/YY"
+                 value={expiry}
+                 onChange={(e) => setExpiry(e.target.value)}
+                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+               />
              </div>
              <div>
                <label className="text-xs font-semibold text-gray-500 uppercase">CVV</label>
-               <input type="password" placeholder="123" className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none" />
+               <input
+                 type="password"
+                 placeholder="123"
+                 value={cvv}
+                 onChange={(e) => setCvv(e.target.value)}
+                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+               />
              </div>
            </div>
+
+           {error && (
+             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+               <p className="text-red-700 text-sm">{error}</p>
+             </div>
+           )}
 
            <button 
             onClick={handlePay}
@@ -105,6 +146,85 @@ export const PaymentModal: React.FC<{
            <p className="text-gray-500 mt-2">Your booking has been confirmed. You will receive an SMS shortly.</p>
          </div>
        )}
+    </Modal>
+  );
+};
+
+// --- Reschedule Modal ---
+export const RescheduleModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  appointment: any;
+  onReschedule: (appointmentId: string, newDate: string, newTime: string) => void;
+}> = ({ isOpen, onClose, appointment, onReschedule }) => {
+  const [selectedDate, setSelectedDate] = useState('');
+  const [selectedTime, setSelectedTime] = useState('');
+  const availableSlots = ["10:00 AM", "11:30 AM", "2:00 PM", "4:30 PM"];
+
+  const handleReschedule = () => {
+    if (selectedDate && selectedTime) {
+      onReschedule(appointment.id, selectedDate, selectedTime);
+      onClose();
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Reschedule Appointment">
+      <div className="space-y-6">
+        <div>
+          <h4 className="font-medium text-gray-900 mb-2">Current Appointment</h4>
+          <div className="p-3 rounded-xl bg-gray-50 border border-gray-200">
+            <p className="text-sm font-medium text-gray-900">{appointment?.doctorName}</p>
+            <p className="text-xs text-gray-500">{appointment?.date} at {appointment?.time}</p>
+          </div>
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-900 mb-2">Select New Date</h4>
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            min={new Date().toISOString().split('T')[0]}
+            className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 outline-none"
+          />
+        </div>
+
+        <div>
+          <h4 className="font-medium text-gray-900 mb-2">Select New Time</h4>
+          <div className="grid grid-cols-2 gap-2">
+            {availableSlots.map(slot => (
+              <button
+                key={slot}
+                onClick={() => setSelectedTime(slot)}
+                className={`py-2 px-3 text-sm rounded-lg border transition ${
+                  selectedTime === slot
+                  ? 'bg-primary-600 text-white border-primary-600'
+                  : 'border-gray-200 text-gray-600 hover:border-primary-300'
+                }`}
+              >
+                {slot}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="border-t border-gray-100 pt-4 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={!selectedDate || !selectedTime}
+            onClick={handleReschedule}
+            className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            Reschedule
+          </button>
+        </div>
+      </div>
     </Modal>
   );
 };
